@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <script src="http://maps.googleapis.com/maps/api/js?key=AIzaSyAVwr9AQxyGR45e7CdtsRnQAeSU1oRibOM"></script>
+    <script>
+        function addToList(content) {
+            var list = document.getElementById('list');
+            var newLI = document.createElement('li');
+            newLI.innerHTML = content;
+            list.appendChild(newLI);
+            setTimeout(function () {
+                newLI.className = newLI.className + " show";
+            }, 10);
+        }
+        var myCenter = new google.maps.LatLng(36.35131981936201, 127.30094164609909);
+        var map;
+        var waypoints = [];
+
+        function initialize() {
+            var mapProp = {
+                center: myCenter,
+                zoom: 16,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            };
+            map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
+
+            google.maps.event.addListener(map, 'click', function (e) {
+                placeMarker(e.latLng);
+                addToList('좌표'+waypoints.length);
+            });
+        }
+        function placeMarker(location) {
+            waypoints.push(new google.maps.Marker({
+                position: location,
+                map: map
+            }));
+            console.log(location.lat() + ', ' + location.lng());
+        }
+
+        google.maps.event.addDomListener(window, 'load', initialize);
+    </script>
+</head>
+<body>
+<div id="googleMap" style="width:500px; height:500px; float: left;"></div>
+<div class="fade" style="width: 200px; height: 500px; float: left; border: 1px black solid;">
+    <ul id="list">
+    </ul>
+</div>
+</body>
+
+</html>
