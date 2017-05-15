@@ -27,25 +27,59 @@
 
             google.maps.event.addListener(map, 'click', function (e) {
                 placeMarker(e.latLng);
-                addToList('좌표'+waypoints.length);
+                addToList('좌표' + waypoints.length);
             });
         }
+
         function placeMarker(location) {
-            waypoints.push(new google.maps.Marker({
+            new google.maps.Marker({
                 position: location,
                 map: map
-            }));
-            console.log(location.lat() + ', ' + location.lng());
+            });
+            var position = {
+                lat: location.lat(),
+                lng: location.lng()
+            };
+            console.log(position);
+            waypoints.push(position);
         }
 
         google.maps.event.addDomListener(window, 'load', initialize);
+
+        function sendData(path, params, method) {
+            method = method || "post";
+            var tmp = JSON.stringify(params);
+            console.log(tmp);
+
+            var form = document.createElement("form");
+            form.setAttribute("method", method);
+            form.setAttribute("action", path);
+
+            for (var key in params){
+                var hiddenField = document.createElement("input");
+                hiddenField.setAttribute("type", "hidden");
+                hiddenField.setAttribute("name", key);
+                hiddenField.setAttribute("value", params[key]);
+
+                form.appendChild(hiddenField);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        }
     </script>
 </head>
 <body>
 <div id="googleMap" style="width:500px; height:500px; float: left;"></div>
 <div class="fade" style="width: 200px; height: 500px; float: left; border: 1px black solid;">
-    <ul id="list">
-    </ul>
+    <div style="overflow-y: auto; height: 465px; display: block;">
+        <ul id="list">
+        </ul>
+    </div>
+    <div>
+        <input onclick="sendData('/send', waypoints, 'post')" type="button" value="확인"
+               style="display: block;margin-left: auto; margin-right: auto">
+    </div>
 </div>
 </body>
 
