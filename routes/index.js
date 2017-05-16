@@ -8,7 +8,9 @@ router.get('/', function (req, res) {
 });
 
 router.post('/send', function (req, res) {
-    console.log(JSON.stringify(req.body, null, 4));
+    console.log(req.body.obj);
+    let obj = JSON.parse(req.body.obj);
+
     res.send(req.body);
 });
 

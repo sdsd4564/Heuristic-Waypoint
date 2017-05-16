@@ -40,7 +40,6 @@
                 lat: location.lat(),
                 lng: location.lng()
             };
-            console.log(position);
             waypoints.push(position);
         }
 
@@ -55,14 +54,12 @@
             form.setAttribute("method", method);
             form.setAttribute("action", path);
 
-            for (var key in params){
-                var hiddenField = document.createElement("input");
-                hiddenField.setAttribute("type", "hidden");
-                hiddenField.setAttribute("name", key);
-                hiddenField.setAttribute("value", params[key]);
+            var hiddenField = document.createElement("input");
+            hiddenField.setAttribute("type", "hidden");
+            hiddenField.setAttribute("name", 'obj');
+            hiddenField.setAttribute("value", tmp);
 
-                form.appendChild(hiddenField);
-            }
+            form.appendChild(hiddenField);
 
             document.body.appendChild(form);
             form.submit();
