@@ -8,8 +8,14 @@ router.get('/', function (req, res) {
 });
 
 router.post('/send', function (req, res) {
-    console.log(req.body.obj);
-    let obj = JSON.parse(req.body.obj);
+    let obj = [];
+    let dist = [];
+    obj = JSON.parse(req.body.obj);
+    dist = JSON.parse(req.body.dist);
+    console.log(obj);
+    dist.forEach((p1) => {
+        console.log(p1.elements);
+    });
 
     res.send(req.body);
 });
