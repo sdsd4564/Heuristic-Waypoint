@@ -12,10 +12,6 @@ router.post('/send', function (req, res) {
     let dist = [];
     obj = JSON.parse(req.body.obj);
     dist = JSON.parse(req.body.dist);
-    console.log(obj);
-    dist.forEach((p1) => {
-        console.log(p1.elements);
-    });
 
     res.send(req.body);
 });
