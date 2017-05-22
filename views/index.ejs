@@ -2,6 +2,7 @@
 <html>
 <head>
     <link rel="stylesheet" href="/stylesheets/style.css">
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script>
         let map;
         let service;
@@ -16,7 +17,7 @@
             list.appendChild(newLI);
             setTimeout(function () {
                 newLI.className = newLI.className + " show";
-            }, 10);
+            }, 100);
         }
 
         function initialize() {
@@ -29,8 +30,13 @@
             service = new google.maps.DirectionsService;
 
             google.maps.event.addListener(map, 'click', function (e) {
-                placeMarker(e.latLng);
-                addToList('좌표' + waypoints.length);
+                if (waypoints.length <= 15) {
+                    placeMarker(e.latLng);
+                    addToList('좌표' + waypoints.length);
+                    alert(new Date().getTime());
+                } else {
+                    alert('15개까지만 가능합니다. 아직은...');
+                }
             });
         }
 
@@ -57,6 +63,27 @@
             POSTForm.submit();
         }
 
+        function checkQueryLimit() {
+            $.post('/checkQueryLimit',
+                function (req, res) {
+                    if (res) {
+                        service.route({
+                            origin: waypoints[index],
+                            destination: waypoints[i],
+                            travelMode: 'DRIVING'
+                        }, function (res, status) {
+                            if (status === 'OK') {
+                                dist.push(res.routes[0]);
+                            } else {
+                                window.alert(status);
+                            }
+                        });
+                    } else {
+                        //todo
+                    }
+                })
+        }
+
         function sendData(path, params, method, callback) {
             process.nextTick(endOfData);
             method = method || "post";
@@ -76,17 +103,7 @@
 
             for (let index = 0; index < waypoints.length; index++) {
                 for (let i = 0; i < index; i++) {
-                    service.route({
-                        origin: waypoints[index],
-                        destination: waypoints[i],
-                        travelMode: 'DRIVING'
-                    }, function (res, status) {
-                        if (status === 'OK') {
-                            dist.push(res.routes[0]);
-                        } else {
-                            window.alert(status);
-                        }
-                    });
+                    //todo
                 }
             }
 
@@ -101,31 +118,6 @@
 //            document.body.appendChild(form);
 //            form.submit();
 //        }
-//
-
-
-//        service.getDistanceMatrix({
-//            origins: waypoints,
-//            destinations: waypoints,
-//            travelMode: 'DRIVING',
-//            unitSystem: google.maps.UnitSystem.METRIC,
-//            avoidHighways: false,
-//            avoidTolls: false
-//        }, function (response, status) {
-//            if (status !== 'OK') {
-//                alert('Error was: ' + status);
-//            } else {
-//                let dist = JSON.stringify(response.rows);
-//                let distanceObj = document.createElement("input");
-//                distanceObj.setAttribute("type", "hidden");
-//                distanceObj.setAttribute("name", 'dist');
-//                distanceObj.setAttribute("value", dist);
-//
-//                form.appendChild(distanceObj);
-//                document.body.appendChild(form);
-//                form.submit();
-//            }
-//        });
         }
     </script>
 </head>
