@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <title>거리 계산 서비스</title>
     <link rel="stylesheet" href="/stylesheets/style.css">
+    <meta charset="utf-8">
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script>
         let map;
-        let service;
+        let directionService;
         let waypoints = [];
         let dist = [];
         let POSTForm;
@@ -27,13 +29,11 @@
                 zoom: 16
             };
             map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
-            service = new google.maps.DirectionsService;
 
             google.maps.event.addListener(map, 'click', function (e) {
                 if (waypoints.length <= 15) {
                     placeMarker(e.latLng);
                     addToList('좌표' + waypoints.length);
-                    alert(new Date().getTime());
                 } else {
                     alert('15개까지만 가능합니다. 아직은...');
                 }
@@ -49,43 +49,8 @@
             waypoints.push(position);
         }
 
-        //        google.maps.event.addDomListener(window, 'load', initialize);
 
-        function endOfData() {
-            let distStr = JSON.stringify(dist);
-            console.log(distStr);
-            let distanceObj = document.createElement("input");
-            distanceObj.setAttribute("type", "hidden");
-            distanceObj.setAttribute("name", 'dist');
-            distanceObj.setAttribute("value", distStr);
-            POSTForm.appendChild(distanceObj);
-            document.body.appendChild(POSTForm);
-            POSTForm.submit();
-        }
-
-        function checkQueryLimit() {
-            $.post('/checkQueryLimit',
-                function (req, res) {
-                    if (res) {
-                        service.route({
-                            origin: waypoints[index],
-                            destination: waypoints[i],
-                            travelMode: 'DRIVING'
-                        }, function (res, status) {
-                            if (status === 'OK') {
-                                dist.push(res.routes[0]);
-                            } else {
-                                window.alert(status);
-                            }
-                        });
-                    } else {
-                        //todo
-                    }
-                })
-        }
-
-        function sendData(path, params, method, callback) {
-            process.nextTick(endOfData);
+        function sendData(path, params, method) {
             method = method || "post";
 
             let tmp = JSON.stringify(params);
@@ -101,23 +66,51 @@
 
             POSTForm.appendChild(hiddenField);
 
-            for (let index = 0; index < waypoints.length; index++) {
-                for (let i = 0; i < index; i++) {
-                    //todo
-                }
-            }
+            for (let index = 0; index <= waypoints.length; index++) {
+                setTimeout(function () {
+                    if (index === waypoints.length) {
+                        console.log("센딩! : " + dist.length);
+                        let distStr = JSON.stringify(dist);
+                        let distanceObj = document.createElement("input");
+                        distanceObj.setAttribute("type", "hidden");
+                        distanceObj.setAttribute("name", 'dist');
+                        distanceObj.setAttribute("value", distStr);
+                        POSTForm.appendChild(distanceObj);
+                        document.body.appendChild(POSTForm);
 
-//        if (dist.length === (waypoints.length * (waypoints.length - 1) / 2)) {
-//            let distStr = JSON.stringify(dist);
-//            console.log(distStr);
-//            let distanceObj = document.createElement("input");
-//            distanceObj.setAttribute("type", "hidden");
-//            distanceObj.setAttribute("name", 'dist');
-//            distanceObj.setAttribute("value", distStr);
-//            form.appendChild(distanceObj);
-//            document.body.appendChild(form);
-//            form.submit();
-//        }
+                        POSTForm.submit();
+                    } else {
+                        console.log("카운트! : (" + dist.length + "/" + waypoints.length * (waypoints.length - 1) / 2 + ")");
+                        for (let i = 0; i < index; ++i) {
+                            $.post('/checkQueryLimit',
+                                function (req) {
+                                    if (req.isLimitedOK === true) {
+                                        console.log("isLimitedOK : " + req.isLimitedOK);
+                                        directionService = new google.maps.DirectionsService;
+                                        directionService.route({
+                                            origin: waypoints[index],
+                                            destination: waypoints[i],
+                                            travelMode: 'DRIVING'
+                                        }, function (res, status) {
+                                            console.log("status : " + status);
+                                            if (status === 'OK') {
+                                                dist.push({
+                                                    'distance': res.routes[0].legs[0].distance.value,
+                                                    'duration': res.routes[0].legs[0].duration.value
+                                                });
+                                            } else if (status === 'OVER_QUERY_LIMIT') {
+                                                console.log('OVER QUERY !!!!!!!!!');
+                                                i--;
+                                            } else {
+                                                window.alert(status);
+                                            }
+                                        });
+                                    }
+                                })
+                        }
+                    }
+                }, index * 1000);
+            }
         }
     </script>
 </head>
