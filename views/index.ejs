@@ -7,9 +7,7 @@
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script>
         let map;
-        let directionService;
         let waypoints = [];
-        let dist = [];
         let POSTForm;
 
         function addToList(content) {
@@ -65,53 +63,10 @@
             hiddenField.setAttribute("value", tmp);
 
             POSTForm.appendChild(hiddenField);
-
-            for (let index = 0; index <= waypoints.length; index++) {
-                setTimeout(function () {
-                    if (index === waypoints.length) {
-                        console.log("센딩! : " + dist.length);
-                        let distStr = JSON.stringify(dist);
-                        let distanceObj = document.createElement("input");
-                        distanceObj.setAttribute("type", "hidden");
-                        distanceObj.setAttribute("name", 'dist');
-                        distanceObj.setAttribute("value", distStr);
-                        POSTForm.appendChild(distanceObj);
-                        document.body.appendChild(POSTForm);
-
-                        POSTForm.submit();
-                    } else {
-                        console.log("카운트! : (" + dist.length + "/" + waypoints.length * (waypoints.length - 1) / 2 + ")");
-                        for (let i = 0; i < index; ++i) {
-                            $.post('/checkQueryLimit',
-                                function (req) {
-                                    if (req.isLimitedOK === true) {
-                                        console.log("isLimitedOK : " + req.isLimitedOK);
-                                        directionService = new google.maps.DirectionsService;
-                                        directionService.route({
-                                            origin: waypoints[index],
-                                            destination: waypoints[i],
-                                            travelMode: 'DRIVING'
-                                        }, function (res, status) {
-                                            console.log("status : " + status);
-                                            if (status === 'OK') {
-                                                dist.push({
-                                                    'distance': res.routes[0].legs[0].distance.value,
-                                                    'duration': res.routes[0].legs[0].duration.value
-                                                });
-                                            } else if (status === 'OVER_QUERY_LIMIT') {
-                                                console.log('OVER QUERY !!!!!!!!!');
-                                                i--;
-                                            } else {
-                                                window.alert(status);
-                                            }
-                                        });
-                                    }
-                                })
-                        }
-                    }
-                }, index * 1000);
-            }
+            document.body.appendChild(POSTForm);
+            POSTForm.submit();
         }
+
     </script>
 </head>
 <body>

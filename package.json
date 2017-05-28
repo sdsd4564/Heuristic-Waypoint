@@ -15,6 +15,7 @@
     "serve-favicon": "~2.4.2",
     "underscore": "latest",
     "kruskal": "latest",
-    "node-kruskal": "latest"
+    "node-kruskal": "latest",
+    "queue": "latest"
   }
 }

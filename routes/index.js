@@ -6,8 +6,6 @@ const kruskal = require('node-kruskal');
 let queryLimit = 0;
 let checkedTime;
 let coord = [];
-let dist = [];
-
 
 router.get('/', function (req, res) {
     res.render('index', {title: 'Express'});
@@ -40,30 +38,65 @@ router.post('/checkQueryLimit', function (req, res) {
 
 router.post('/send', function (req, res) {
     coord = JSON.parse(req.body.obj);
-    dist = JSON.parse(req.body.dist);
-    console.log(dist);
     console.log(coord);
     res.send("성공");
 });
 
 
 router.get('/test', function (req, res) {
-    let distArr = [];
-    for (let i = 0; i < coord.length; i++) {
-        distArr[i] = [];
-        for (let j = 0; j < coord.length; j++)
-            distArr[i][j] = i === j
-                ? 0
-                : i < j
-                    ? dist[(j - 1) * j / 2 + i].distance
-                    : dist[(i - 1) * i / 2 + j].distance;
-    }
+    let coordClone = coord;
+    let open = [];
+    let close = [];
+    const startCity = new Node(coord[0].lat, coord[0].lng, null, 0);
+    open.unshift(startCity);
+    evaluateFunction(startCity, coordClone[3]);
 
-    kruskal.kruskalMST(distArr, function (result) {
-        res.send(result);
-    });
+    // while (open.length !== 0) {
+    //     open.sort(function (o1, o2) {
+    //         return o1.seq < o2.seq ? -1 : o1.seq > o2.seq ? 1 : 0;
+    //     });
+    //     let node = open.pop();
+    //     close.unshift(node);
+    //     let tmp = {
+    //         'lat': node.lat,
+    //         'lng': node.lng
+    //     };
+    //
+    //     if (node.lat === startCity.lat && node.lng === startCity.lng && node.parentNode !== null)
+    //         return;
+    //     coordClone.splice(coordClone.indexOf(tmp), 1);
+    //     for (let obj in coordClone) {
+    //         // evaluateFunction(node, obj);
+    //         open.push(new Node(obj.lat, obj.lng, node, 55));
+    //     }
+    // }
+
 });
 
+function Node(lat, lng, parentNode, evalFunction) {
+    this.lat = lat;
+    this.lng = lng;
+    this.parentNode = parentNode;
+    this.evalFunction = evalFunction;
+}
+
+function evaluateFunction() {
+    let arr = [];
+    for (let i = 0; i < arguments.length; i++) {
+        arr[i] = [];
+        for (let j = 0; j < arguments.length; j++) {
+            arr[i][j] = i === j ? 0 : i < j ? getDistance(arguments[i], arguments[j]) : getDistance(arguments[j], arguments[i]);
+        }
+    }
+
+    kruskal.kruskalMST(arr, function (result) {
+        console.log(result);
+    })
+}
+
+function getDistance(current, target) {
+    return Math.sqrt(Math.pow(current.lat - target.lat, 2) + Math.pow(current.lng - target.lng, 2));
+}
 
 module.exports = router;
 
