@@ -1,22 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const kruskal = require('node-kruskal');
+const async = require('async');
 
 // 구글 DIRECTION API 초당 사용량 50개를 피하기 위함.
 let queryLimit = 0;
 let checkedTime;
-let coord = [];
 
 router.get('/', function (req, res) {
     res.render('index', {title: 'Express'});
 });
 
 router.post('/checkQueryLimit', function (req, res) {
-    if (!checkedTime) {
-        checkedTime = new Date();
-    }
     const currentTime = new Date();
-
+    if (!checkedTime)
+        checkedTime = new Date();
 
     if (queryLimit < 50) {
         console.log("쿼리 센딩 성공");
@@ -37,40 +35,54 @@ router.post('/checkQueryLimit', function (req, res) {
 });
 
 router.post('/send', function (req, res) {
-    coord = JSON.parse(req.body.obj);
-    console.log(coord);
-    res.send("성공");
-});
-
-
-router.get('/test', function (req, res) {
-    let coordClone = coord;
+    let coord = JSON.parse(req.body.obj);
+    let coordClone = coord.slice();
     let open = [];
     let close = [];
     const startCity = new Node(coord[0].lat, coord[0].lng, null, 0);
     open.unshift(startCity);
-    evaluateFunction(startCity, coordClone[3]);
 
-    // while (open.length !== 0) {
-    //     open.sort(function (o1, o2) {
-    //         return o1.seq < o2.seq ? -1 : o1.seq > o2.seq ? 1 : 0;
-    //     });
-    //     let node = open.pop();
-    //     close.unshift(node);
-    //     let tmp = {
-    //         'lat': node.lat,
-    //         'lng': node.lng
-    //     };
-    //
-    //     if (node.lat === startCity.lat && node.lng === startCity.lng && node.parentNode !== null)
-    //         return;
-    //     coordClone.splice(coordClone.indexOf(tmp), 1);
-    //     for (let obj in coordClone) {
-    //         // evaluateFunction(node, obj);
-    //         open.push(new Node(obj.lat, obj.lng, node, 55));
-    //     }
-    // }
+    while (open.length !== 0) {
+        open.sort(function (o1, o2) {
+            return o1.evalFunction < o2.evalFunction ? -1 : o1.evalFunction > o2.evalFunction ? 1 : 0;
+        });
 
+        let current = open[0];
+        open.splice(0, 1);
+
+        close.push(current);
+
+        if (coordClone.length !== 0) {
+            coordClone.some((obj) => {
+                if (obj.lat === current.lat && obj.lng === current.lng) {
+                    coordClone.splice(obj, 1);
+                    return true;
+                }
+            });
+        } else {
+            console.log(open.length);
+            res.send(close);
+            break;
+        }
+
+        let tempNode = current;
+        let currentDistanceToThe = 0;
+        while (tempNode.parentNode !== null) {
+            currentDistanceToThe += getDistance(tempNode, tempNode.parentNode);
+            tempNode = tempNode.parentNode;
+        }
+
+
+        coordClone.forEach((obj) => {
+            tempNode = new Node(obj.lat, obj.lng, current, evaluateFunction(close, obj) + currentDistanceToThe);
+            for (let i = 0; i < open.length; i++)
+                if (open[i].lat === tempNode.lat && open[i].lng === tempNode.lng && open[i].evalFunction >= tempNode.evalFunction) {
+                    open.splice(i, 1);
+                    console.log("hanlog 2222222");
+                }
+            open.push(tempNode);
+        })
+    }
 });
 
 function Node(lat, lng, parentNode, evalFunction) {
@@ -80,23 +92,46 @@ function Node(lat, lng, parentNode, evalFunction) {
     this.evalFunction = evalFunction;
 }
 
-function evaluateFunction() {
+function evaluateFunction(close, obj) {
+    let minimumCost = 0;
     let arr = [];
-    for (let i = 0; i < arguments.length; i++) {
-        arr[i] = [];
-        for (let j = 0; j < arguments.length; j++) {
-            arr[i][j] = i === j ? 0 : i < j ? getDistance(arguments[i], arguments[j]) : getDistance(arguments[j], arguments[i]);
-        }
-    }
+    async.series([
+        function (callback) {
+            let closeArr = close.slice();
+            closeArr.push(obj);
+            // let arr = [];
+            for (let i = 0; i < closeArr.length; i++) {
+                arr[i] = [];
+                for (let j = 0; j < closeArr.length; j++) {
+                    arr[i][j] = i === j ? 0 : i < j ? getDistance(closeArr[i], closeArr[j]) : getDistance(closeArr[j], closeArr[i]);
+                }
+            }
 
-    kruskal.kruskalMST(arr, function (result) {
-        console.log(result);
+            let fromStart = getDistance(closeArr[0], obj);
+            let fromCurrent = getDistance(closeArr[closeArr.length - 2], closeArr[closeArr.length - 1]);
+            minimumCost = fromCurrent + fromStart;
+            // let minimumCost = 0;
+            // kruskal.kruskalMST(arr, function (results) {
+            //     minimumCost = results.mst + fromCurrent + fromStart;
+            // });
+            // return minimumCost;
+            callback(null, arr);
+        },
+        function (callback) {
+            kruskal.kruskalMST(arr, function (result) {
+                minimumCost += result.mst;
+            });
+            callback(null, minimumCost);
+        }
+    ],
+    function (err, result) {
+        return result[1];
     })
+
 }
 
 function getDistance(current, target) {
-    return Math.sqrt(Math.pow(current.lat - target.lat, 2) + Math.pow(current.lng - target.lng, 2));
+    return Math.sqrt(Math.pow((current.lat - target.lat) * 92000, 2) + Math.pow((current.lng - target.lng) * 114000, 2));
 }
 
 module.exports = router;
-

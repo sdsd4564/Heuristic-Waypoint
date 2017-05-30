@@ -16,6 +16,7 @@
     "underscore": "latest",
     "kruskal": "latest",
     "node-kruskal": "latest",
-    "queue": "latest"
+    "queue": "latest",
+    "async": "latest"
   }
 }
