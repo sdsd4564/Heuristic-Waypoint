@@ -3,7 +3,10 @@ const router = express.Router();
 const kruskal = require('node-kruskal');
 const async = require('async');
 
-// 구글 DIRECTION API 초당 사용량 50개를 피하기 위함.
+const googleMapClient = require('@google/maps').createClient({
+    key: 'AIzaSyAVwr9AQxyGR45e7CdtsRnQAeSU1oRibOM'
+});
+
 let queryLimit = 0;
 let checkedTime;
 
@@ -60,7 +63,7 @@ router.post('/send', function (req, res) {
                 }
             });
         } else {
-            console.log(open.length);
+            console.log(close.length);
             res.send(close);
             break;
         }
@@ -74,12 +77,14 @@ router.post('/send', function (req, res) {
 
 
         coordClone.forEach((obj) => {
-            tempNode = new Node(obj.lat, obj.lng, current, evaluateFunction(close, obj) + currentDistanceToThe);
-            for (let i = 0; i < open.length; i++)
+            evaluateFunction(close, obj, function (result) {
+                tempNode = new Node(obj.lat, obj.lng, current, result[1] + currentDistanceToThe);
+            });
+            for (let i = 0; i < open.length; i++) {
                 if (open[i].lat === tempNode.lat && open[i].lng === tempNode.lng && open[i].evalFunction >= tempNode.evalFunction) {
                     open.splice(i, 1);
-                    console.log("hanlog 2222222");
                 }
+            }
             open.push(tempNode);
         })
     }
@@ -92,41 +97,34 @@ function Node(lat, lng, parentNode, evalFunction) {
     this.evalFunction = evalFunction;
 }
 
-function evaluateFunction(close, obj) {
+function evaluateFunction(close, obj, callback) {
     let minimumCost = 0;
     let arr = [];
     async.series([
-        function (callback) {
-            let closeArr = close.slice();
-            closeArr.push(obj);
-            // let arr = [];
-            for (let i = 0; i < closeArr.length; i++) {
-                arr[i] = [];
-                for (let j = 0; j < closeArr.length; j++) {
-                    arr[i][j] = i === j ? 0 : i < j ? getDistance(closeArr[i], closeArr[j]) : getDistance(closeArr[j], closeArr[i]);
+            function (callback) {
+                let closeArr = close.slice();
+                closeArr.push(obj);
+                for (let i = 0; i < closeArr.length; i++) {
+                    arr[i] = [];
+                    for (let j = 0; j < closeArr.length; j++) {
+                        arr[i][j] = i === j ? 0 : i < j ? getDistance(closeArr[i], closeArr[j]) : getDistance(closeArr[j], closeArr[i]);
+                    }
                 }
+                let fromStart = getDistance(closeArr[0], obj);
+                let fromCurrent = getDistance(closeArr[closeArr.length - 2], closeArr[closeArr.length - 1]);
+                minimumCost = fromCurrent + fromStart;
+                callback(null, arr);
+            },
+            function (callback) {
+                kruskal.kruskalMST(arr, function (result) {
+                    minimumCost += result.mst;
+                });
+                callback(null, minimumCost);
             }
-
-            let fromStart = getDistance(closeArr[0], obj);
-            let fromCurrent = getDistance(closeArr[closeArr.length - 2], closeArr[closeArr.length - 1]);
-            minimumCost = fromCurrent + fromStart;
-            // let minimumCost = 0;
-            // kruskal.kruskalMST(arr, function (results) {
-            //     minimumCost = results.mst + fromCurrent + fromStart;
-            // });
-            // return minimumCost;
-            callback(null, arr);
-        },
-        function (callback) {
-            kruskal.kruskalMST(arr, function (result) {
-                minimumCost += result.mst;
-            });
-            callback(null, minimumCost);
-        }
-    ],
-    function (err, result) {
-        return result[1];
-    })
+        ],
+        function (err, result) {
+            callback(result);
+        })
 
 }
 
