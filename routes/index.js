@@ -39,10 +39,11 @@ router.post('/checkQueryLimit', function (req, res) {
 
 router.post('/send', function (req, res) {
     let coord = JSON.parse(req.body.obj);
+    console.log(coord);
     let coordClone = coord.slice();
     let open = [];
     let close = [];
-    const startCity = new Node(coord[0].lat, coord[0].lng, null, 0);
+    const startCity = new Node(coord[0].lat, coord[0].lng, null, 0, coord[0].index);
     open.unshift(startCity);
 
     while (open.length !== 0) {
@@ -53,8 +54,6 @@ router.post('/send', function (req, res) {
         let current = open[0];
         open.splice(0, 1);
 
-        close.push(current);
-
         if (coordClone.length !== 0) {
             coordClone.some((obj) => {
                 if (obj.lat === current.lat && obj.lng === current.lng) {
@@ -63,38 +62,52 @@ router.post('/send', function (req, res) {
                 }
             });
         } else {
-            console.log(close.length);
+            console.log("coord length : " + coord.length);
+            console.log("close length : " + close.length);
             res.send(close);
             break;
         }
 
-        let tempNode = current;
-        let currentDistanceToThe = 0;
-        while (tempNode.parentNode !== null) {
-            currentDistanceToThe += getDistance(tempNode, tempNode.parentNode);
-            tempNode = tempNode.parentNode;
-        }
-
-
-        coordClone.forEach((obj) => {
-            evaluateFunction(close, obj, function (result) {
-                tempNode = new Node(obj.lat, obj.lng, current, result[1] + currentDistanceToThe);
-            });
-            for (let i = 0; i < open.length; i++) {
-                if (open[i].lat === tempNode.lat && open[i].lng === tempNode.lng && open[i].evalFunction >= tempNode.evalFunction) {
-                    open.splice(i, 1);
-                }
+        let isCloseContain = false;
+        close.some((obj) => {
+            if (obj.lat === current.lat && obj.lng === current.lng) {
+                isCloseContain = true;
+                return true;
             }
-            open.push(tempNode);
-        })
+        });
+
+        if (!isCloseContain) {
+            close.push(current);
+
+            let tempNode = current;
+            let currentDistanceToThe = 0;
+            while (tempNode.parentNode !== null) {
+                currentDistanceToThe += getDistance(tempNode, tempNode.parentNode);
+                tempNode = tempNode.parentNode;
+            }
+
+            coordClone.forEach((obj) => {
+                evaluateFunction(close, obj, function (result) {
+                    tempNode = new Node(obj.lat, obj.lng, current, result[1] + currentDistanceToThe, obj.index);
+                    for (let i = 0; i < open.length; i++) {
+                        if (open[i].lat === tempNode.lat && open[i].lng === tempNode.lng && open[i].evalFunction >= tempNode.evalFunction) {
+                            console.log(open[i]);
+                            open.splice(i, 1);
+                        }
+                    }
+                    open.push(tempNode);
+                });
+            })
+        }
     }
 });
 
-function Node(lat, lng, parentNode, evalFunction) {
+function Node(lat, lng, parentNode, evalFunction, index) {
     this.lat = lat;
     this.lng = lng;
     this.parentNode = parentNode;
     this.evalFunction = evalFunction;
+    this.index = index;
 }
 
 function evaluateFunction(close, obj, callback) {
@@ -118,8 +131,8 @@ function evaluateFunction(close, obj, callback) {
             function (callback) {
                 kruskal.kruskalMST(arr, function (result) {
                     minimumCost += result.mst;
+                    callback(null, minimumCost);
                 });
-                callback(null, minimumCost);
             }
         ],
         function (err, result) {

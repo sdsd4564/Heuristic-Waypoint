@@ -9,6 +9,8 @@
         let map;
         let waypoints = [];
         let POSTForm;
+        let index = 0;
+
 
         function addToList(content) {
             let list = document.getElementById('list');
@@ -43,8 +45,13 @@
                 position: location,
                 map: map
             });
-            let position = new google.maps.LatLng(location.lat(), location.lng());
+            let position = {
+                lat: location.lat(),
+                lng : location.lng(),
+                index: index
+            };
             waypoints.push(position);
+            index++;
         }
 
 
@@ -85,4 +92,3 @@
         src="http://maps.googleapis.com/maps/api/js?key=AIzaSyAVwr9AQxyGR45e7CdtsRnQAeSU1oRibOM&callback=initialize"></script>
 </body>
 </html>
-
