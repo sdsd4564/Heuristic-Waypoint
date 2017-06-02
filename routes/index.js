@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const kruskal = require('node-kruskal');
+const pQueue = require('fastpriorityqueue');
 const async = require('async');
 
 const googleMapClient = require('@google/maps').createClient({
@@ -39,106 +40,111 @@ router.post('/checkQueryLimit', function (req, res) {
 
 router.post('/send', function (req, res) {
     let coord = JSON.parse(req.body.obj);
-    console.log(coord);
-    let coordClone = coord.slice();
-    let open = [];
-    let close = [];
-    const startCity = new Node(coord[0].lat, coord[0].lng, null, 0, coord[0].index);
-    open.unshift(startCity);
-
-    while (open.length !== 0) {
-        open.sort(function (o1, o2) {
-            return o1.evalFunction < o2.evalFunction ? -1 : o1.evalFunction > o2.evalFunction ? 1 : 0;
-        });
-
-        let current = open[0];
-        open.splice(0, 1);
-
-        if (coordClone.length !== 0) {
-            coordClone.some((obj) => {
-                if (obj.lat === current.lat && obj.lng === current.lng) {
-                    coordClone.splice(obj, 1);
-                    return true;
-                }
-            });
-        } else {
-            console.log("coord length : " + coord.length);
-            console.log("close length : " + close.length);
-            res.send(close);
-            break;
-        }
-
-        let isCloseContain = false;
-        close.some((obj) => {
-            if (obj.lat === current.lat && obj.lng === current.lng) {
-                isCloseContain = true;
-                return true;
-            }
-        });
-
-        if (!isCloseContain) {
-            close.push(current);
-
-            let tempNode = current;
-            let currentDistanceToThe = 0;
-            while (tempNode.parentNode !== null) {
-                currentDistanceToThe += getDistance(tempNode, tempNode.parentNode);
-                tempNode = tempNode.parentNode;
-            }
-
-            coordClone.forEach((obj) => {
-                evaluateFunction(close, obj, function (result) {
-                    tempNode = new Node(obj.lat, obj.lng, current, result[1] + currentDistanceToThe, obj.index);
-                    for (let i = 0; i < open.length; i++) {
-                        if (open[i].lat === tempNode.lat && open[i].lng === tempNode.lng && open[i].evalFunction >= tempNode.evalFunction) {
-                            console.log(open[i]);
-                            open.splice(i, 1);
-                        }
-                    }
-                    open.push(tempNode);
-                });
-            })
-        }
+    let startCity = 0;
+    let numOfCities = coord.length;
+    let path = [];
+    let visited = [];
+    for (let i = 0; i < numOfCities; i++) visited[i] = 0;
+    let cost = [];
+    for (let i = 0; i < numOfCities; i++) {
+        cost[i] = [];
+        for (let j = 0; j < numOfCities; j++)
+            cost[i][j] = i === j ? 0 : i < j ? getDistance(coord[i], coord[j]) : getDistance(coord[j], coord[i]);
     }
+    let openList = new pQueue(function (a, b) {
+        return a.cost > b.cost;
+    });
+
+    let numOfVisited = 1;
+    let currentCity = startCity;
+    visited[currentCity] = numOfVisited++;
+    while (numOfVisited <= numOfCities) {
+        for (let i = 0; i < numOfCities; i++) {
+            if (i !== currentCity && visited[i] === 0) {
+                tempEvaluateFuntion(cost, visited, numOfCities, function (result) {
+                    openList.add(new SearchNode(i, (result + cost[currentCity][i])));
+                })
+            }
+        }
+        currentCity = openList.poll().cityId;
+        visited[currentCity] = numOfVisited++;
+    }
+
+    for (let i = 1; i <= visited.length; i++)
+        for (let j = 0; j < visited.length; j++)
+            if (visited[j] === i)
+                path[i - 1] = j + 1;
+
+    let costIncurred = 0;
+    for (let i = 0; i < visited.length - 1; i++)
+        costIncurred += cost[path[i] - 1][path[i + 1] - 1];
+
+    res.send(path);
 });
 
-function Node(lat, lng, parentNode, evalFunction, index) {
-    this.lat = lat;
-    this.lng = lng;
-    this.parentNode = parentNode;
-    this.evalFunction = evalFunction;
-    this.index = index;
+function SearchNode(cityId, cost) {
+    this.cityId = cityId;
+    this.cost = cost;
 }
 
-function evaluateFunction(close, obj, callback) {
-    let minimumCost = 0;
-    let arr = [];
-    async.series([
-            function (callback) {
-                let closeArr = close.slice();
-                closeArr.push(obj);
-                for (let i = 0; i < closeArr.length; i++) {
-                    arr[i] = [];
-                    for (let j = 0; j < closeArr.length; j++) {
-                        arr[i][j] = i === j ? 0 : i < j ? getDistance(closeArr[i], closeArr[j]) : getDistance(closeArr[j], closeArr[i]);
+function tempEvaluateFuntion(cost, visited, numOfCities, callback) {
+    let q = new pQueue(function (a, b) {
+        return a.cost > b.cost
+    });
+    let tree = [];
+    async.waterfall([
+        function (callback) {
+            for (let i = 0; i < numOfCities; i++)
+                for (let j = i + 1; j < numOfCities; j++)
+                    if (visited[i] === 0 && visited[j] === 0) {
+                        q.add({
+                            fromNode: i,
+                            toNode: j,
+                            cost: cost[i][j]
+                        });
                     }
-                }
-                let fromStart = getDistance(closeArr[0], obj);
-                let fromCurrent = getDistance(closeArr[closeArr.length - 2], closeArr[closeArr.length - 1]);
-                minimumCost = fromCurrent + fromStart;
-                callback(null, arr);
-            },
-            function (callback) {
-                kruskal.kruskalMST(arr, function (result) {
-                    minimumCost += result.mst;
-                    callback(null, minimumCost);
-                });
-            }
-        ],
-        function (err, result) {
-            callback(result);
-        })
 
+
+            for (let i = 0, tempNum = numOfCities; i < tempNum; i++)
+                if (visited[i] > 0) numOfCities--;
+
+            callback(null, numOfCities);
+        },
+        function (numOfCities, callback) {
+            let tempEdge;
+            let i = 0;
+            while ((tempEdge = q.poll()) !== null && i < numOfCities - 1) {
+                isCycle(tempEdge, tree, function (isCycled) {
+                    if (!isCycled) {
+                        tree.push(tempEdge);
+                        i++;
+                    }
+                });
+                if (i === numOfCities - 1) {
+                    callback(null);
+                }
+            }
+        },
+        function (callback) {
+            let totalCost = 0;
+            tree.forEach((tempEdge) => {
+                totalCost += tempEdge.cost;
+            });
+            callback(null, totalCost);
+        }
+    ], function (err, result) {
+        callback(result);
+    });
+
+}
+function isCycle(newEdge, tree, callback) {
+    let node1Match, node2Match;
+    node1Match = node2Match = false;
+    tree.forEach((tempEdge) => {
+        node1Match = !node1Match && (newEdge.fromNode === tempEdge.fromNode || newEdge.fromNode === tempEdge.toNode);
+        node2Match = !node2Match && (newEdge.toNode === tempEdge.fromNode || newEdge.toNode === tempEdge.toNode);
+    });
+    callback(node1Match && node2Match);
 }
 
 function getDistance(current, target) {

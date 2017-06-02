@@ -6,11 +6,11 @@
     <meta charset="utf-8">
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script>
+
         let map;
         let waypoints = [];
         let POSTForm;
-        let index = 0;
-
+        let geocode;
 
         function addToList(content) {
             let list = document.getElementById('list');
@@ -19,7 +19,7 @@
             list.appendChild(newLI);
             setTimeout(function () {
                 newLI.className = newLI.className + " show";
-            }, 100);
+            }, 10);
         }
 
         function initialize() {
@@ -29,29 +29,36 @@
                 zoom: 16
             };
             map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
+            geocode = new google.maps.Geocoder;
 
             google.maps.event.addListener(map, 'click', function (e) {
-                if (waypoints.length <= 15) {
-                    placeMarker(e.latLng);
-                    addToList('좌표' + waypoints.length);
-                } else {
-                    alert('15개까지만 가능합니다. 아직은...');
-                }
+
+                placeMarker(e.latLng);
             });
         }
 
         function placeMarker(location) {
+            geocode.geocode({
+                'location': {
+                    lat: location.lat(),
+                    lng: location.lng()
+                }
+            }, function (results, status) {
+                if (status === 'OK') {
+                    addToList(results[1].formatted_address);
+                } else {
+                    window.alert("주소를 찾을 수 없습니다");
+                    addToList("위도 " + location.lat().toFixed(5) + " 경도 " + location.lng().toFixed(5))
+                }
+            })
+            let addressList = document.getElementById("address_list");
+            addressList.scrollTop = addressList.scrollHeight + 60;
             new google.maps.Marker({
                 position: location,
                 map: map
             });
-            let position = {
-                lat: location.lat(),
-                lng : location.lng(),
-                index: index
-            };
+            let position = new google.maps.LatLng(location.lat(), location.lng());
             waypoints.push(position);
-            index++;
         }
 
 
@@ -74,12 +81,17 @@
             POSTForm.submit();
         }
 
+
+        $(window).scroll(function () {
+
+        })
     </script>
+
 </head>
 <body>
-<div id="googleMap" style="width:500px; height:500px; float: left;"></div>
-<div class="fade" style="width: 200px; height: 500px; float: left; border: 1px black solid;">
-    <div style="overflow-y: auto; height: 465px; display: block;">
+<div id="googleMap" style="width:80%; height:768px; float: left;"></div>
+<div class="slide-fade" style="width: 20%; height: 768px; float: right;">
+    <div id="address_list" style="margin: 0;overflow: auto; height: 700px;">
         <ul id="list">
         </ul>
     </div>
