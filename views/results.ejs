@@ -15,6 +15,17 @@
                 zoom: 16
             });
             directionsDisplay.setMap(map);
+            directionsService.route({
+                origin: new google.maps.LatLng('<%= location[0].lat %>', '<%= location[0].lng%>'),
+                destination: new google.maps.LatLng('<%= location[path[0]].lat %>', '<%= location[path[0]].lng%>'),
+                travelMode: 'DRIVING'
+            }, function (response, status) {
+                if (status === 'OK') {
+                    directionsDisplay.setDirections(response);
+                } else {
+                    window.alert('Directions request failed due to ' + status);
+                }
+            });
         }
     </script>
 </head>
