@@ -4,35 +4,40 @@
     <title>거리 계산 서비스</title>
     <link rel="stylesheet" href="/stylesheets/style.css">
     <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script>
-
         let map;
         let waypoints = [];
         let POSTForm;
         let geocode;
 
-        function addToList(content) {
+        function addToList(content, location) {
             let list = document.getElementById('list');
             let newLI = document.createElement('li');
             newLI.innerHTML = content;
             list.appendChild(newLI);
             setTimeout(function () {
                 newLI.className = newLI.className + " show";
+                let addressList = document.getElementById("address_list");
+                addressList.scrollTop = addressList.scrollHeight;
+                new google.maps.Marker({
+                    position: location,
+                    map: map
+                });
+                let position = new google.maps.LatLng(location.lat(), location.lng());
+                waypoints.push(position);
             }, 10);
         }
 
         function initialize() {
-            let myCenter = new google.maps.LatLng(40.758369, -73.9795613);
-            let mapProp = {
-                center: myCenter,
+            map = new google.maps.Map(document.getElementById("googleMap"), {
+                center: {lat: 40.7583, lng: -73.9795},
                 zoom: 16
-            };
-            map = new google.maps.Map(document.getElementById("googleMap"), mapProp);
+            });
             geocode = new google.maps.Geocoder;
 
             google.maps.event.addListener(map, 'click', function (e) {
-
                 placeMarker(e.latLng);
             });
         }
@@ -45,20 +50,12 @@
                 }
             }, function (results, status) {
                 if (status === 'OK') {
-                    addToList(results[1].formatted_address);
+                    addToList(results[1].formatted_address, location);
                 } else {
                     window.alert("주소를 찾을 수 없습니다");
-                    addToList("위도 " + location.lat().toFixed(5) + " 경도 " + location.lng().toFixed(5))
+                    addToList("위도 " + location.lat().toFixed(5) + " 경도 " + location.lng().toFixed(5), location);
                 }
             })
-            let addressList = document.getElementById("address_list");
-            addressList.scrollTop = addressList.scrollHeight + 60;
-            new google.maps.Marker({
-                position: location,
-                map: map
-            });
-            let position = new google.maps.LatLng(location.lat(), location.lng());
-            waypoints.push(position);
         }
 
 
@@ -80,23 +77,18 @@
             document.body.appendChild(POSTForm);
             POSTForm.submit();
         }
-
-
-        $(window).scroll(function () {
-
-        })
     </script>
 
 </head>
 <body>
-<div id="googleMap" style="width:80%; height:768px; float: left;"></div>
-<div class="slide-fade" style="width: 20%; height: 768px; float: right;">
-    <div id="address_list" style="margin: 0;overflow: auto; height: 700px;">
+<div id="googleMap" style="width:80%; height: 100%; float: left;"></div>
+<div class="slide-fade" style="width: 20%; height: 100%; float: right; background-color: #ffffff">
+    <div id="address_list" style="margin: 0;overflow: auto; height: 720px;">
         <ul id="list">
         </ul>
     </div>
     <div>
-        <input onclick="sendData('/send', waypoints, 'post')" type="button" value="확인"
+        <input class="btn" onclick="sendData('/results', waypoints, 'post')" type="button" value="확인"
                style="display: block;margin-left: auto; margin-right: auto">
     </div>
 </div>

@@ -38,7 +38,7 @@ router.post('/checkQueryLimit', function (req, res) {
     }
 });
 
-router.post('/send', function (req, res) {
+router.post('/results', function (req, res) {
     let coord = JSON.parse(req.body.obj);
     let startCity = 0;
     let numOfCities = coord.length;
@@ -79,7 +79,10 @@ router.post('/send', function (req, res) {
     for (let i = 0; i < visited.length - 1; i++)
         costIncurred += cost[path[i] - 1][path[i + 1] - 1];
 
-    res.send(path);
+    res.render('results', {
+        path: path,
+        location: coord
+    });
 });
 
 function SearchNode(cityId, cost) {

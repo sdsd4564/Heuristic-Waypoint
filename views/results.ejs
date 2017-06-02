@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>거리 계산 서비스</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script>
+        function initialize() {
+            let directionsService = new google.maps.DirectionsService;
+            let directionsDisplay = new google.maps.DirectionsRenderer;
+            let map = new google.maps.Map(document.getElementById("googleMap"), {
+                center: {lat: 40.7583, lng: -73.9795},
+                zoom: 16
+            });
+            directionsDisplay.setMap(map);
+        }
+    </script>
+</head>
+<body>
+<h2><%= path %></h2>
+<h2><%= location %></h2>
+<div id="googleMap" style="width:80%; height: 100%; float: left;"></div>
+<div class="slide-fade" style="width: 20%; height: 100%; float: right; background-color: #ffffff">
+    <div id="address_list" style="margin: 0;overflow: auto; height: 720px;">
+    </div>
+</div>
+<script async defer
+        src="http://maps.googleapis.com/maps/api/js?key=AIzaSyAVwr9AQxyGR45e7CdtsRnQAeSU1oRibOM&callback=initialize"></script>
+</body>
+</html>
