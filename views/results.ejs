@@ -8,35 +8,66 @@
     <script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script>
         function initialize() {
-            let directionsService = new google.maps.DirectionsService;
-            let directionsDisplay = new google.maps.DirectionsRenderer;
-            let map = new google.maps.Map(document.getElementById("googleMap"), {
+            let test = <%- JSON.stringify(location) %>;
+            let path = <%- JSON.stringify(path) %>;
+            let optCoordinates = [];
+            let mapDiv = document.getElementById("googleMap");
+            let map = new google.maps.Map(mapDiv, {
                 center: {lat: 40.7583, lng: -73.9795},
-                zoom: 16
+                zoom: 17
             });
-            directionsDisplay.setMap(map);
-            directionsService.route({
-                origin: new google.maps.LatLng('<%= location[0].lat %>', '<%= location[0].lng%>'),
-                destination: new google.maps.LatLng('<%= location[path[0]].lat %>', '<%= location[path[0]].lng%>'),
-                travelMode: 'DRIVING'
-            }, function (response, status) {
-                if (status === 'OK') {
-                    directionsDisplay.setDirections(response);
-                } else {
-                    window.alert('Directions request failed due to ' + status);
+
+
+            for (let i = 0; i < test.length; i++) {
+                const temp = test[path[i] - 1];
+                optCoordinates.push(temp);
+                let icon = 'http://203.230.100.180:5874/';
+                if (i === 0) {
+                    icon += 'start.png';
+                    new google.maps.Marker({
+                        position: temp,
+                        map: map,
+                        icon: icon,
+                    });
+                } else if (i === test.length - 1) {
+                    icon += 'end.png';
+                    new google.maps.Marker({
+                        position: temp,
+                        map: map,
+                        icon: icon,
+                    });
                 }
+                else {
+                    new google.maps.Marker({
+                        position: temp,
+                        map: map,
+                        label: ''+i
+                    });
+                }
+
+            }
+
+            let optimizedPath = new google.maps.Polyline({
+                path: optCoordinates,
+                geodestic: true,
+                strokeColor: '#42A5F5',
+                strokeOpacity: 1.0,
+                strokeWeight: 5
             });
+
+            optimizedPath.setMap(map);
         }
     </script>
 </head>
 <body>
-<h2><%= path %></h2>
-<h2><%= location %></h2>
-<div id="googleMap" style="width:80%; height: 100%; float: left;"></div>
-<div class="slide-fade" style="width: 20%; height: 100%; float: right; background-color: #ffffff">
-    <div id="address_list" style="margin: 0;overflow: auto; height: 720px;">
-    </div>
+<div id="googleMap" style="width:100%; height: 100%; float: none;"></div>
+<div style="text-align: center; float:none">
+
+        <br>
+
+
 </div>
+
 <script async defer
         src="http://maps.googleapis.com/maps/api/js?key=AIzaSyAVwr9AQxyGR45e7CdtsRnQAeSU1oRibOM&callback=initialize"></script>
 </body>

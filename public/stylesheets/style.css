@@ -1,10 +1,10 @@
 body {
-    padding: 50px 0 0 0;
+    padding: 20px 0 0 0;
     margin: 0;
-    height: 768px;
+    height: 800px;
     width: 100%;
     min-width: 800px;
-    background-color: #BA68C8;
+    background-color: #f9f9f9;
     font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
