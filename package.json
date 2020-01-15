@@ -14,7 +14,7 @@
     "express": "~4.15.2",
     "fastpriorityqueue": "^0.2.4",
     "kruskal": "latest",
-    "morgan": "~1.8.1",
+    "morgan": "~1.9.1",
     "node-kruskal": "latest",
     "queue": "latest",
     "serve-favicon": "~2.4.2",
